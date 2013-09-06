@@ -16,7 +16,7 @@
 uint8_t strip_colors[STRIP_LENGTH][N_COLORS];
 //colors offset by 120 degrees
 uint16_t table_position[N_COLORS] = { 0, 333, 666};
-uint16_t slowdown_factor = 0;
+uint16_t slowdown_factor = 50;
 
 void setup(){
     soft_spi_init();
@@ -45,7 +45,7 @@ void loop(){
     }
 }
 
-void move_color(uint8_t *from, uint8_t *to){
+void copy_color(uint8_t *from, uint8_t *to){
     for(uint8_t i=0; i<N_COLORS; i++){
         to[i] = from[i];
     }
@@ -53,23 +53,23 @@ void move_color(uint8_t *from, uint8_t *to){
 
 void increment_frame(void) {
     //First, move all the current colors down one spot on the strip
-    for(uint8_t x = 0; x < (STRIP_LENGTH -1); x++){
-        move_color(strip_colors[x], strip_colors[x+1]);
-    }
     
+    for(uint8_t x = (STRIP_LENGTH -1); x > 0; x--){
+        copy_color(strip_colors[x-1], strip_colors[x]);
+    }
     //Add new color to the head of the queue
     strip_colors[0][0] = calculate_next_color(
-        &table_position[0], sinewave_table, TABLE_LENGTH);
+        &table_position[0], sinewave_table, TABLE_LENGTH, 10);
     strip_colors[0][1] = calculate_next_color(
-        &table_position[1], sinewave_table, TABLE_LENGTH);
+        &table_position[1], sinewave_table, TABLE_LENGTH, 10);
     strip_colors[0][2] = calculate_next_color(
-        &table_position[2], sinewave_table, TABLE_LENGTH);
+        &table_position[2], sinewave_table, TABLE_LENGTH, 10);
 }
 
 //Currently just loops around a data.
 //TODO: Use subsample to allow stretching of data
-uint8_t calculate_next_color(uint16_t *index, uint8_t * data, uint16_t data_size){
-    const uint16_t i = *index + 1;
+uint8_t calculate_next_color(uint16_t *index, uint8_t * data, uint16_t data_size, uint8_t step_size){
+    const uint16_t i = *index + step_size;
     const uint8_t value = data[i];
     *index = i;
     if(*index >= data_size){
@@ -78,37 +78,12 @@ uint8_t calculate_next_color(uint16_t *index, uint8_t * data, uint16_t data_size
     return value;
 }
 
-//TODO: implement a linearly interpolated subsampler
-uint8_t subsample(uint8_t stepsize, uint16_t * position, uint8_t * data){
-}
-
-//Bitbanged communication with the LED strip
-void send_byte_soft(uint8_t byte){
-    for(uint8_t color_bit = 8 ; color_bit != 0 ; color_bit--) {
-      digitalWrite(CKI, LOW); //Only change data when clock is low
-      
-      uint8_t mask = 1 << (color_bit - 1);
-
-      if(byte & mask) 
-        digitalWrite(SDI, HIGH);
-      else
-        digitalWrite(SDI, LOW);
-  
-      digitalWrite(CKI, HIGH); //Data is latched when clock goes high
-    }
-}
-
 //Hardware communication. A lot faster than software implementation.
 void send_byte_hard(uint8_t byte){
     SPI.transfer(byte);
 }
 
 void push_frame(void) {
-  //Each LED requires 24 bits of data
-  //MSB: R7, R6, R5..., G7, G6..., B7, B6... B0 
-  //Once the 24 bits have been delivered, the IC immediately relays these bits to its neighbor
-  //Pulling the clock low for > 500us + some wiggle causes the IC to post the data.
-
     for(int LED_number = 0; LED_number < STRIP_LENGTH; LED_number++) {
         for(uint8_t color = 0; color < N_COLORS; color++){
             uint8_t current_led = strip_colors[LED_number][color]; //24 bits of color data
