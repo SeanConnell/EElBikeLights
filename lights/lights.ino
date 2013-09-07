@@ -69,13 +69,11 @@ void increment_frame(void) {
 //Currently just loops around a data.
 //TODO: Use subsample to allow stretching of data
 uint8_t calculate_next_color(uint16_t *index, uint8_t * data, uint16_t data_size, uint8_t step_size){
-    const uint16_t i = *index + step_size;
-    const uint8_t value = data[i];
-    *index = i;
+    *index = *index + step_size;
     if(*index >= data_size){
-        *index = 0;
+        *index = *index - data_size;
     }
-    return value;
+    return data[*index];
 }
 
 //Hardware communication. A lot faster than software implementation.
