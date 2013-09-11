@@ -16,6 +16,7 @@
 uint8_t strip_colors[STRIP_LENGTH][N_COLORS];
 //colors offset by 120 degrees
 uint16_t table_position[N_COLORS] = { 0, 333, 666};
+uint16_t slowdown_position = 0;
 uint16_t slowdown_factor = 50;
 
 void setup(){
@@ -41,7 +42,7 @@ void loop(){
     while(1){ 
         increment_frame(); // get new data and setup buffer with next state
         push_frame(); //update display to reflect new buffer state
-        delay(slowdown_factor); //TODO adjust this for effect
+        delay(calculate_next_value(&slowdown_position, slowdown_table, SLOWDOWN_LENGTH, 1));//adjusts update rate
     }
 }
 
@@ -58,17 +59,17 @@ void increment_frame(void) {
         copy_color(strip_colors[x-1], strip_colors[x]);
     }
     //Add new color to the head of the queue
-    strip_colors[0][0] = calculate_next_color(
+    strip_colors[0][0] = calculate_next_value(
         &table_position[0], sinewave_table, TABLE_LENGTH, 10);
-    strip_colors[0][1] = calculate_next_color(
+    strip_colors[0][1] = calculate_next_value(
         &table_position[1], sinewave_table, TABLE_LENGTH, 10);
-    strip_colors[0][2] = calculate_next_color(
+    strip_colors[0][2] = calculate_next_value(
         &table_position[2], sinewave_table, TABLE_LENGTH, 10);
 }
 
 //Currently just loops around a data.
 //TODO: Use subsample to allow stretching of data
-uint8_t calculate_next_color(uint16_t *index, uint8_t * data, uint16_t data_size, uint8_t step_size){
+uint8_t calculate_next_value(uint16_t *index, uint8_t * data, uint16_t data_size, uint8_t step_size){
     *index = *index + step_size;
     if(*index >= data_size){
         *index = *index - data_size;
