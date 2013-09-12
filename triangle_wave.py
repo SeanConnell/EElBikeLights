@@ -6,4 +6,4 @@ for i in xrange(size):
     l.append(i)
 for i in xrange(size):
     l.append(size - i)
-print l
+print l, len(l)
