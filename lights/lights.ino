@@ -17,7 +17,7 @@ uint8_t strip_colors[STRIP_LENGTH][N_COLORS];
 //colors offset by 120 degrees
 uint16_t table_position[N_COLORS] = { 0, 333, 666};
 uint16_t slowdown_position = 0;
-uint16_t slowdown_factor = 50;
+uint16_t dimming_position = 231;//offset since it's using the delay table, to keep things interesting
 
 void setup(){
     soft_spi_init();
@@ -42,7 +42,7 @@ void loop(){
     while(1){ 
         increment_frame(); // get new data and setup buffer with next state
         push_frame(); //update display to reflect new buffer state
-        delay(calculate_next_value(&slowdown_position, slowdown_table, SLOWDOWN_LENGTH, 1));//adjusts update rate
+        delay(calculate_next_value(&slowdown_position, slowdown_table, SLOWDOWN_LENGTH, 5));//adjusts update rate
     }
 }
 
@@ -65,16 +65,28 @@ void increment_frame(void) {
         &table_position[1], sinewave_table, TABLE_LENGTH, 10);
     strip_colors[0][2] = calculate_next_value(
         &table_position[2], sinewave_table, TABLE_LENGTH, 10);
+    adjust_frame_value(strip_colors[0]);//apply dimming effect
+}
+
+//mutate current output value to be adjusted down by some amount
+void adjust_frame_value(uint8_t* value){
+	uint16_t res[3];
+	uint8_t div = calculate_next_value(&dimming_position, slowdown_table, SLOWDOWN_LENGTH, 1);
+	for(uint8_t v=0; v<3; v++){
+	res[v] = value[v] << 8;
+	res[v] /= (div>>5);
+	res[v] = res[v] >> 8;     
+	value[v] = (uint8_t) res[v];
+    }
 }
 
 //Currently just loops around a data.
-//TODO: Use subsample to allow stretching of data
 uint8_t calculate_next_value(uint16_t *index, uint8_t * data, uint16_t data_size, uint8_t step_size){
     *index = *index + step_size;
     if(*index >= data_size){
         *index = *index - data_size;
     }
-    return data[*index];
+    return data[*index]>>2;
 }
 
 //Hardware communication. A lot faster than software implementation.
