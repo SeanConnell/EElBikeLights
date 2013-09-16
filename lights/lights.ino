@@ -42,7 +42,7 @@ void loop(){
     while(1){ 
         increment_frame(); // get new data and setup buffer with next state
         push_frame(); //update display to reflect new buffer state
-        delay(calculate_next_value(&slowdown_position, slowdown_table, SLOWDOWN_LENGTH, 5));//adjusts update rate
+        delay(calculate_next_value(&slowdown_position, triangle_wave_table, TRIANGLE_LENGTH, 7)>>2);//adjusts update rate
     }
 }
 
@@ -60,24 +60,20 @@ void increment_frame(void) {
     }
     //Add new color to the head of the queue
     strip_colors[0][0] = calculate_next_value(
-        &table_position[0], sinewave_table, TABLE_LENGTH, 10);
+        &table_position[0], sine_wave_table, SINE_LENGTH, 10);
     strip_colors[0][1] = calculate_next_value(
-        &table_position[1], sinewave_table, TABLE_LENGTH, 10);
+        &table_position[1], sine_wave_table, SINE_LENGTH, 10);
     strip_colors[0][2] = calculate_next_value(
-        &table_position[2], sinewave_table, TABLE_LENGTH, 10);
+        &table_position[2], sine_wave_table, SINE_LENGTH, 10);
     adjust_frame_value(strip_colors[0]);//apply dimming effect
 }
 
-//mutate current output value to be adjusted down by some amount
+//mutate current output value to be adjusted down by some mask amount
 void adjust_frame_value(uint8_t* value){
-	uint16_t res[3];
-	uint8_t div = calculate_next_value(&dimming_position, slowdown_table, SLOWDOWN_LENGTH, 1);
+	uint8_t mask = calculate_next_value(&dimming_position, triangle_wave_table, TRIANGLE_LENGTH, 1);
 	for(uint8_t v=0; v<3; v++){
-	res[v] = value[v] << 8;
-	res[v] /= (div>>5);
-	res[v] = res[v] >> 8;     
-	value[v] = (uint8_t) res[v];
-    }
+            value[v] &= mask;
+        }
 }
 
 //Currently just loops around a data.
@@ -86,7 +82,7 @@ uint8_t calculate_next_value(uint16_t *index, uint8_t * data, uint16_t data_size
     if(*index >= data_size){
         *index = *index - data_size;
     }
-    return data[*index]>>2;
+    return data[*index];
 }
 
 //Hardware communication. A lot faster than software implementation.
