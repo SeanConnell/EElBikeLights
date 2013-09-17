@@ -77,6 +77,10 @@ void push_frame(void) {
 
 void setup(){
 	hard_spi_init();
+	randomSeed(analogRead(0));
+	red_itr.loc = random(1000);
+	grn_itr.loc = random(1000);
+	blu_itr.loc = random(1000);
 }
 
 void loop(){
