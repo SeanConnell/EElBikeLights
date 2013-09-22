@@ -9,9 +9,13 @@
  * https://www.sparkfun.com/products/11272
  */
 
-#include "lights.h"
+#include "Arduino.h"
+#include "avr/wdt.h"
 #include <SPI.h>
-
+#include "baremetal.h"
+#include "colors.h"
+#include "lights.h"
+#include "lookup_tables.h"
 
 //colors offset by 120 degrees
 ITERATOR red_itr = { 1, 0 };
@@ -19,37 +23,6 @@ ITERATOR grn_itr = { 1, 333 };
 ITERATOR blu_itr = { 1, 666 };
 ITERATOR dim_itr = { 2, 231 };
 ITERATOR dly_itr = { 10, 0 };
-
-void hard_spi_init(){
-    SPI.begin();
-    SPI.setBitOrder(MSBFIRST);
-    SPI.setClockDivider(SPI_CLOCK_DIV2);
-    SPI.setDataMode(1);//Rising edge clock, normal data polarities
-    pinMode(SS, OUTPUT);//keep from getting accidentally reset
-}
-
-//Iterate a data array in a circle
-uint8_t get_next_value(ITERATOR * itr, TABLE * values){
-	itr->loc = itr->loc + itr->step_size;
-	if(itr->loc >= values->length){
-		itr->loc = itr->loc - values->length;
-	}
-	return values->data[itr->loc]; 
-}
-
-//mutate color to be dimmed by a mask value 
-void dim_color(COLOR * color){
-	uint8_t mask = get_next_value(&dim_itr, &triangle_table);
-	color->red &= mask;
-	color->grn &= mask;
-	color->blu &= mask;
-}
-
-void copy_color(COLOR * from, COLOR * to){
-       to->red = from->red;
-       to->grn = from->grn;
-       to->blu = from->blu; 
-}
 
 void increment_frame(void) {
     //First, move all the current colors down one spot on the strip
@@ -60,7 +33,7 @@ void increment_frame(void) {
     next_color->red = get_next_value(&red_itr, &sine_table);
     next_color->grn = get_next_value(&grn_itr, &sine_table);
     next_color->blu = get_next_value(&blu_itr, &sine_table);
-    dim_color(next_color);//apply dimming effect
+    dim_color(next_color, &dim_itr, &triangle_table);//apply dimming effect
 }
 
 void push_frame(void) {
@@ -76,8 +49,7 @@ void push_frame(void) {
 }
 
 void setup(){
-	hard_spi_init();
-	randomSeed(analogRead(0));
+	setup_baremetal();
 	red_itr.loc = random(1000);
 	grn_itr.loc = random(1000);
 	blu_itr.loc = random(1000);
