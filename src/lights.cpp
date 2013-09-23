@@ -16,6 +16,7 @@
 #include "colors.h"
 #include "lights.h"
 #include "lookup_tables.h"
+#include "command_dispatcher.h"
 
 //colors offset by 120 degrees
 ITERATOR red_itr = { 1, 0 };
