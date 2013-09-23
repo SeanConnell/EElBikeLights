@@ -11,9 +11,10 @@ void unrecognized(){
 
 void echo(){
 	char *arg;  
+	char count = 0;
 	Serial.print("ECHO "); 
 	arg = SCmd.next();    // Get the next argument from the SerialCommand object buffer
-	while (arg != NULL){     // As long as it exists, take it 
+	while (arg != NULL && count++ < 100){//Read everything up to 100 in this stream
 		Serial.print(arg); 
 		arg = SCmd.next();    // Get the next argument from the SerialCommand object buffer
 	} 

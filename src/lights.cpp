@@ -50,7 +50,8 @@ void push_frame(void) {
 }
 
 void setup(){
-	setup_baremetal();
+	setup_baremetal(); //initialize various hardwares
+	initialize_handlers(); //initialize serial callback handlers
 	red_itr.loc = random(1000);
 	grn_itr.loc = random(1000);
 	blu_itr.loc = random(1000);
@@ -60,6 +61,7 @@ void loop(){
     while(WORLD_EXISTS){ 
         increment_frame(); // get new data and setup buffer with next state
         push_frame(); //update display to reflect new buffer state
+	handle_data(); //respond to serial updates
         delay((get_next_value(&dly_itr, &triangle_table)>>3) + 5);//adjusts update rate
     }
 }
