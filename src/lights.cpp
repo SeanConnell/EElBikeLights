@@ -37,6 +37,18 @@ void increment_frame(void) {
     dim_color(next_color, &dim_itr, &triangle_table);//apply dimming effect
 }
 
+void get_state(){
+        int loc = 32;
+        COLOR * c;
+        while(loc-- > 0){
+                c = &(strip_colors[loc]);
+                Serial.print(c->red);
+                Serial.print(c->grn);
+                Serial.print(c->blu);
+        }
+}
+
+
 void push_frame(void) {
     //Send all values of LEDs in order
     for(int LED_number = 0; LED_number < STRIP_LENGTH; LED_number++) {

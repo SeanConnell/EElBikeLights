@@ -14,5 +14,6 @@
 #define DATA_GATHERING  3
 #define CLEAR_STATE     4
 #define RESTART         5
+void get_state();//will dump array of colors to serial
 
 #endif
